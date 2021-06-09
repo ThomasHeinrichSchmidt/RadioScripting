@@ -1,0 +1,11 @@
+GET  /ws/2/recording?query=Winter+Wonderland%20AND%20artist:Aretha+Franklin&type:song&limit=1  HTTP/1.1
+Host: musicbrainz.org
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:88.0) Gecko/20100101 Firefox/88.0
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8
+Accept-Language: de,en-US;q=0.7,en;q=0.3
+DNT: 1
+Connection: close
+Upgrade-Insecure-Requests: 1
+
+
+
