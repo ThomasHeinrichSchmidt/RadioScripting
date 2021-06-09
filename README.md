@@ -43,7 +43,7 @@ env             insmod          mt7601Usta.ko   telnetd
 false           iwtools         mv              test
 #
 ````
-This seems impressive, but if you look closer, you will notice that many useful or necessary tools are missing. There is no editor, no grep, no curl, no netcat that you would expect to script the radio. Later I found out that the shell itself is also quite limited. It did not allow the evaluation of arithmetic expressions, so a counting loop is not really possible. But there is ``ftpget`` and ``ftpput`` to allow file transfer. That should actually be enough.
+This seems impressive, but if you look closer, you will notice that many useful or necessary tools are missing. There is no editor, no grep, no curl, no netcat that you would expect to script the radio. And - worst of all - no apt-get to install anything afterwards. Later I found out that the shell itself is also quite limited. It did not allow the evaluation of arithmetic expressions, so a counting loop is not really possible. But there is ``ftpget`` and ``ftpput`` to allow file transfer. In the end, that should actually be enough.
 
 ## Tools
 Two things are necessary for the radio to obey. We need to control the volume and predict the length of a song. My radio listens to UPnP, it appears as renderer on apps like UPnPlay for Android. Device Spy from [Developer Tools for UPnP Technologies](https://www.meshcommander.com/upnptools) shows properties and methods of UPnP devices on the network. To test run device methods you'll use "Invoke Action"
@@ -176,7 +176,7 @@ $  make install
 ````
 With this you are able to build [getq](https://github.com/ThomasHeinrichSchmidt/RadioScripting/blob/main/bin/getq).
 ````
-$  ~Dev/musl/musl-cross/musl-cross-make/output/bin/arm-linux-musleabi-gcc -Wall -g -static getq.c -o getq
+$  ~/Dev/musl/musl-cross/musl-cross-make/output/bin/arm-linux-musleabi-gcc -Wall -g -static getq.c -o getq
 ````
 
 
@@ -211,24 +211,70 @@ Total sent bytes: 398
 OK, this is a bit confusing, but with a homemade little [grep](https://github.com/ThomasHeinrichSchmidt/RadioScripting/blob/main/bin/grep) you can easily get the playing time of 134 seconds from it, hidden in ``<length>134066</length>``.
 
 ````
+# cat /tmp/Request.txt | /tmp/netcat -vv -w 5  musicbrainz.org 80  > /tmp/Response.txt
 # /tmp/grep -st length /tmp/Response.txt
 134
 ````
 ### Put everything together
-... by writing an ash script for the radio
+Now we have almost everything together to really tell the radio what to do. All that's missing is a tool with which to calculate the playing times, like this
+````
+# /tmp/calc 134 - 7
+127
+````
+I used [calc](https://github.com/ThomasHeinrichSchmidt/RadioScripting/blob/main/bin/calc) from [Thom Seddon](https://github.com/thomseddon/calc) for this, which can do more than enough for my needs.
+
+Check out my script [MuteMusic.sh](https://github.com/ThomasHeinrichSchmidt/RadioScripting/blob/main/bin/MuteMusic.sh) at work:
+
+````
+# ftpget 192.168.178.49 -P 2121 /tmp/MuteMusic.sh MuteMusic.sh
+# chmod +x /tmp/MuteMusic.sh
+# /tmp/MuteMusic.sh
+getting files from 192.168.178.49 using port 2121
+switch to the desired station
+now mute song for 180 sec starting at Wed Jun 9 15:34:11 UTC 2021
+new song is starting at Wed Jun 9 15:34:23 UTC 2021 while last song still muted
+198
+MusicBrainz says 198 sec for Blue Christmas by The Brian Setzer Orchestra
+now mute song for 198 sec starting at Wed Jun 9 15:34:25 UTC 2021
+new song is starting at Wed Jun 9 15:37:07 UTC 2021 while last song still muted
+260
+MusicBrainz says 260 sec for Little Drummer Boy by Josh Groban
+now mute song for 260 sec starting at Wed Jun 9 15:37:09 UTC 2021
+...
+...
+````
+Of course, this requires that the station sends the corresponding ``/tmp/playinfo.xml`` in time for the start of a new song. Furthermore, my script simply turns down the volume for 3 minutes if it can't determine the length of the song, for example when the station announces news.
 
 ### More Tools
-... built from BusyBox
+While I was working hard to get all the tools together, I had been looking at Busybox on and off, but only learned how to make individual components work for my radio pretty much at the end. If you know how to do it, it's not difficult either. You need to download the [BusyBox sources](https://busybox.net/downloads/) in the desired version, I used version 1.15.2, matching my radio. The [cross-compiler](https://github.com/richfelker/musl-cross-make) must be installed, in my case in ``~/Dev/musl/musl-cross/musl-cross-make/output/bin``. First we have to build BusyBox itself.
+````
+export PATH=$PATH:/home/thomas/Dev/musl/musl-cross/musl-cross-make/output/bin
+make CROSS_COMPILE=arm-linux-musleabi- menuconfig
+make CROSS_COMPILE=arm-linux-musleabi-
+````
 
+Thus, we are able to create any BusyBox tool using the ``make_single_applets.sh`` script provided by BusyBox. We only need to change the make options by setting ``makeopts="-j9 CROSS_COMPILE=arm-linux-musleabi- LDFLAGS=--static"`` inside the script first. Then it is easy to build the world famous editor ED.
 
+````
+$ ./make_single_applets.sh ED
+Making ED...
+Failures: 0
+$ file busybox_ED
+busybox_ED: ELF 32-bit LSB executable, ARM, EABI5 version 1 (SYSV), statically linked, stripped
+````
+
+### Where to go from here?
+If you're a music lover, you might want to do the exact opposite: listen only to the music and tune out the goofy talking. This is quite simple, all you need to do is swap the desired volume values in [SetVolumeHigh.xml](https://github.com/ThomasHeinrichSchmidt/RadioScripting/blob/main/bin/SetVolumeHigh.xml) and [SetVolumeLow.xml](https://github.com/ThomasHeinrichSchmidt/RadioScripting/blob/main/bin/SetVolumeLow.xml). However, there may be songs that you don't want to listen to at all, or some that you absolutely have to listen to as loud as possible.
+
+Then it's time to do something about it yourself and modify the whole thing accordingly.
 
 
 ## Limitations
-* on my radio I cannot retrieve ListPresets.
+* On my radio I can't get the list of presets (``ListPresets``), that would be nice to change the station automatically for example if the music on the current station gets too bad.
 
 ## Acknowledgments
 * use [MusicBrainz Search API](https://musicbrainz.org/doc/MusicBrainz_API) to determine the length of a song
-* used Busybox tools from [BUSYBOX](https://busybox.net), especially make_single_applets.sh
+* used Busybox tools from [BUSYBOX](https://busybox.net), especially ``make_single_applets.sh``
 * used musl-targeting cross-compilers made possible by [Rich Felker](https://github.com/richfelker/musl-cross-make)
 * used netcat from [Richard Ni](https://github.com/Richard-Ni/arm-linux-netcat)
 * used calc from [Thom Seddon](https://github.com/thomseddon/calc)
