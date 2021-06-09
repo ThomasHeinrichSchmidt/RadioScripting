@@ -1,0 +1,16 @@
+POST /RenderingControl/Control HTTP/1.1
+HOST: 192.168.178.51:52525
+SOAPACTION: "urn:schemas-upnp-org:service:RenderingControl:1#SetVolume"
+CONTENT-TYPE: text/xml; charset="utf-8"
+Content-Length: 424
+
+<?xml version="1.0" encoding="utf-8"?>
+<s:Envelope s:encodingStyle="http://schemas.xmlsoap.org/soap/encoding/" xmlns:s="http://schemas.xmlsoap.org/soap/envelope/">
+   <s:Body>
+      <u:SetVolume xmlns:u="urn:schemas-upnp-org:service:RenderingControl:1">
+         <InstanceID>0</InstanceID>
+         <Channel>Master</Channel>
+         <DesiredVolume>75</DesiredVolume>
+      </u:SetVolume>
+   </s:Body>
+</s:Envelope>
