@@ -166,16 +166,21 @@ Fortunately for me, there are [services](https://en.wikipedia.org/wiki/List_of_o
 ````
 GET  /ws/2/recording?query=Winter+Wonderland%20AND%20artist:Aretha+Franklin&type:song&limit=1  HTTP/1.1
 ````
-All I needed now was a [tool](https://github.com/ThomasHeinrichSchmidt/RadioScripting/blob/main/src/getq.c) that would turn artist and song from playinfo.xml into a GET for MusicBrainz. In principle not very difficult, but how do I get this to work on the radio? Luckily [Rich Felker](https://github.com/richfelker/musl-cross-make) came to my rescue, who has already prepared everything:
+All I needed now was a tool (I called it [getq](https://github.com/ThomasHeinrichSchmidt/RadioScripting/blob/main/src/getq.c)) that would turn artist and song from playinfo.xml into a GET for MusicBrainz. In principle not very difficult, but how do I get this to work on the radio? Luckily [Rich Felker](https://github.com/richfelker/musl-cross-make) came to my rescue, who has already prepared everything:
 
 ````
 $  git clone git://github.com/richfelker/musl-cross-make.git
         -- in config.mak set ==> TARGET = arm-linux-musleabi
 $  make           -- runs for two hours
 $  make install
+````
+With this you are able to build [getq](https://github.com/ThomasHeinrichSchmidt/RadioScripting/blob/main/bin/getq).
+````
 $  ~Dev/musl/musl-cross/musl-cross-make/output/bin/arm-linux-musleabi-gcc -Wall -g -static getq.c -o getq
 ````
-Together with a fixed [template](https://github.com/ThomasHeinrichSchmidt/RadioScripting/blob/main/bin/mbRequest.txt), we can now send the request to MusicBrainz.
+
+
+Together with a fixed template [mbRequest.txt](https://github.com/ThomasHeinrichSchmidt/RadioScripting/blob/main/bin/mbRequest.txt) file, we can now send the request to MusicBrainz.
 
 ````
 # /tmp/getq /tmp/playinfo.xml > /tmp/GET.xml
@@ -203,9 +208,17 @@ Access-Control-Allow-Origin: *
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?><metadata created="2021-06-09T09:48:56.313Z" xmlns="http://musicbrainz.org/ns/mmd-2.0#" xmlns:ns2="http://musicbrainz.org/ns/ext#-2.0"><recording-list count="10" offset="0"><recording id="c66fe1bf-939c-494a-be9f-9cef55e25696" ns2:score="100"><title>Winter Wonderland</title><length>134066</length><artist-credit><name-credit><name>Aretha Franklin</name><artist id="2f9ecbed-27be-40e6-abca-6de49d50299e"><name>Aretha Franklin</name><sort-name>Franklin, Aretha</sort-name><alias-list><alias sort-name="Franklin, Aretha">Franklin, Aretha</alias><alias sort-name="Aretha Fanklin">Aretha Fanklin</alias><alias sort-name="Franklin, Aretha Louise" type="Legal name" type-id="d4dcd0c0-b341-3612-a332-c0ce797b25cf">Aretha Louise Franklin</alias><alias sort-name="Arthaa Franklin">Arthaa Franklin</alias><alias sort-name="Aretha Franklyn">Aretha Franklyn</alias><alias sort-name="Aretja Franklin">Aretja Franklin</alias></alias-list></artist></name-credit></artist-credit><first-release-date>2002</first-release-date><release-list><release id="5bc1c73e-7155-4b45-9bd6-f5fbfc11901f"><title>Making Spirits Bright</title><status id="518ffc83-5cde-34df-8627-81bff5093d92">Promotion</status><artist-credit><name-credit><name>Various Artists</name><artist id="89ad4ac3-39f7-470e-963a-56509c546377"><name>Various Artists</name><sort-name>Various Artists</sort-name><disambiguation>add compilations to this artist</disambiguation></artist></name-credit></artist-credit><release-group id="cb0c5e60-5c3c-4756-ac8c-80cb76ed2b0d" type="Compilation" type-id="dd2a21e1-0c00-3729-a7a0-de60b84eb5d1"><title>Making Spirits Bright</title><primary-type id="f529b476-6e62-324f-b0aa-1f3e33d313fc">Album</primary-type><secondary-type-list><secondary-type id="dd2a21e1-0c00-3729-a7a0-de60b84eb5d1">Compilation</secondary-type></secondary-type-list></release-group><date>2002</date><country>CA</country><release-event-list><release-event><date>2002</date><area id="71bbafaa-e825-3e15-8ca9-017dcad1748b"><name>Canada</name><sort-name>Canada</sort-name><iso-3166-1-code-list><iso-3166-1-code>CA</iso-3166-1-code></iso-3166-1-code-list></area></release-event></release-event-list><medium-list count="1"><track-count>10</track-count><medium><position>1</position><format>CD</format><track-list count="10" offset="7"><track id="57748cb4-48fa-4716-9789-f1da97391eb1"><number>8</number><title>Winter Wonderland</title><length>134066</length></track></track-list></medium></medium-list></release></release-list></recording></recording-list></metadata>Total received bytes: 2953
 Total sent bytes: 398
 ````
-OK, this is a bit confusing, but with a homemade little grep you can easily get the playing time in seconds from it, hidden in ``<length>134066</length>``.
+OK, this is a bit confusing, but with a homemade little [grep](https://github.com/ThomasHeinrichSchmidt/RadioScripting/blob/main/bin/grep) you can easily get the playing time of 134 seconds from it, hidden in ``<length>134066</length>``.
 
+````
+# /tmp/grep -st length /tmp/Response.txt
+134
+````
+### Put everything together
+... by writing an ash script for the radio
 
+### More Tools
+... built from BusyBox
 
 
 
