@@ -50,15 +50,19 @@ Two things are necessary for the radio to obey. We need to control the volume an
 ![UPnP Device Spy - Invoke Action](https://github.com/ThomasHeinrichSchmidt/RadioScripting/blob/main/media/UPnP%20Device%20Spy%20-%20Invoke%20Action.png?raw=true)
 
 To see what's going on you need to show debug information
+
 ![UPnP Device Spy - Show Invoke Details](https://github.com/ThomasHeinrichSchmidt/RadioScripting/blob/main/media/UPnP%20Device%20Spy%20-%20Show%20Invoke%20Details.png?raw=true)
 
 After invoking the desired function
+
 ![UPnP Device Spy - Invoke](https://github.com/ThomasHeinrichSchmidt/RadioScripting/blob/main/media/UPnP%20Device%20Spy%20-%20Invoke.png?raw=true)
 
 you can look at the generated POST
+
 ![UPnP Device Spy - Show POST](https://github.com/ThomasHeinrichSchmidt/RadioScripting/blob/main/media/UPnP%20Device%20Spy%20-%20Show%20POST.png?raw=true)
 
 and the result returned (volume 45% in this case)
+
 ![UPnP Device Spy - Show Return data](https://github.com/ThomasHeinrichSchmidt/RadioScripting/blob/main/media/UPnP%20Device%20Spy%20-%20Show%20Return%20data.png?raw=true)
 
 So you see, the radio is in principle able to respond to UPnP commands. However, there are some strange things, e.g. my radio changes the volume after a SetVolume call only for about 2 seconds, then it returns to the previous volume. But if I switch the radio station via UPnP before, then changing the volume with UPnP also works. So you have to experiment a bit depending on the radio to get a working solution.
@@ -83,7 +87,8 @@ Revision        : 0000
 Serial          : 0000000000000000
 
 ````
-After some searching I found a [netcat](https://github.com/Richard-Ni/arm-linux-netcat/tree/master/arm/bin) that was built for Arm (later I learned to build one myself). But you have to be careful not to use tools that overload the radio. If the memory or computational requirements become too large, the radio freezes and you have to start over. The radio has a  ``top`` that gives you an idea. Mine has about 7 MB of free memory - not really much
+After some searching I found a [netcat](https://github.com/Richard-Ni/arm-linux-netcat/tree/master/arm/bin) that was built for Arm (later I learned to build one myself). But you have to be careful not to use tools that overload the radio. If the memory or computational requirements become too large, the radio freezes and you have to start over.
+The radio has a  ``top`` that gives you an idea. Mine has about 7 MB of free memory - not really much
 ````
 # top
 Mem: 22760K used, 6892K free, 0K shrd, 0K buff, 6528K cached
@@ -97,6 +102,8 @@ Load average: 4.69 4.63 4.65 1/60 1723
   321   319 root     S     6916  23%   0% W950OSD 3 4
   370     2 root     SW       0   0%   0% [RtmpMlmeTask]
 ````
+By the way, every time after the radio was turned off, it restores its original configuration, so you have to reinstall everything again.
+
 I used ``$ python -m pyftpdlib -i 192.168.178.49 -w -p 2121 -d /home/me/FTP`` to set up a temporary FTP server on a PC. I have always used the /tmp folder on the radio for file exchange.
 ````
 # ftpget -v 192.168.178.49 -P 2121 /tmp/netcat netcat
@@ -128,21 +135,21 @@ Content-Length: 296
 <s:Body>
 <u:SetVolumeResponse xmlns:u="urn:schemas-upnp-org:service:RenderingControl:1"></u:SetVolumeResponse></s:Body></s:Envelope>
 ````
-and you'll hear the volume decrease, but only briefly, then it gets louder again, at least on my radio. To actually change the volume permanently, we have to switch the radio station beforehand. This is done similarly as above with ``SetAVTransportURI``. But what is the URI we need for the desired station? If your radio comes with an internet service that lets you select favorites, then you might be able to get the URI that way. On my radio there is a ``/tmp/myradio.cfg`` that contains the radio presets. It's best to get the file via FTP because it's not a text file with easy to read content.
+and you'll hear the volume decrease, but only briefly, then it gets louder again, at least on my radio. To actually change the volume permanently, we have to switch the radio station beforehand. This is done similarly as above with ``SetAVTransportURI``. But what is the URI we need for the desired station? If your radio comes with an internet service that lets you select favorites, then you might be able to get the URI that way. On my radio there is a ``/tmp/myradio.cfg`` that contains the radio presets. It's best to retrieve the file via FTP because it's not a text file with easy to read content.
 ````
 # ftpput 192.168.178.49 -v -P 2121 /tmp/myradio.cfg myradio.cfg
 ````
 If you look at the file, at the beginning of each 366 bytes record is the name of the radio station and further at the end the URI you are looking for - provided the desired station is included in your presets. You can also use [favlist.exe](https://github.com/ThomasHeinrichSchmidt/RadioScripting/blob/main/bin/favlist.exe) from [kayrus](https://github.com/kayrus/iradio) to recreate the presets in [myradio.cfg](https://github.com/ThomasHeinrichSchmidt/RadioScripting/blob/main/bin/myradio.cfg) to your liking using a [playlist.csv](https://github.com/ThomasHeinrichSchmidt/RadioScripting/blob/main/bin/playlist.csv). You just have to make sure to encode an ampersand from myradio.cfg in the URI accordingly (e.g. ``id=123&sc=N9XX_AAC`` ➞ ``id=123&amp;amp;sc=N9XX_AAC``).
-Thus equipped, we can now switch to the desired station and adjust the volume as desired.
+Thus equipped, we can now switch to the desired station and adjust the volume as desired (see [SetChannel-1000XmasHits](https://github.com/ThomasHeinrichSchmidt/RadioScripting/blob/main/bin/SetChannel-1000XmasHits.xml)).
 ````
 # cat /tmp/SetChannel-1000XmasHits.xml  | /tmp/netcat -n -w 5  127.0.0.1  52525 > nul
 # sleep 10
 # cat /tmp/SetVolumeLow.xml  | /tmp/netcat -n -w 5  127.0.0.1  52525 > nul
 ````
-Now the volume is actually permanently turned down, which is probably best for the station.
+Now the volume is actually permanently turned down, which is probably best for the station anyway.
 
 ### Listen to the music
-At first I thought I could detect (with artificial intelligence or Shazam or both) which song is playing and then turn down the volume according to its playing time. But very soon I realized that this could not be done with the resources of the radio. I might have needed another service on a server to determine the playing time. And worse - it would have taken a few (?) seconds to realize that music was now playing and I needed to reduce the volume.
+At first I thought I could detect (with artificial intelligence or Shazam or both) which song is playing and then turn down the volume according to its playing time. But very soon I realized that this could not be done with the resources of the radio. I might have had to use a service on a separate server to determine playing time. And worse - it would have taken a few (?) seconds to realize that music was now playing and I needed to reduce the volume.
 
 So, what to do?
 
@@ -151,18 +158,56 @@ I found that the radio describes the currently played station in ``/tmp/playinfo
 # cat /tmp/playinfo.xml
 <stream_format>MP3 /224 Kbps</stream_format><logo_img>http://127.0.0.1:8080/playlogo.jpg</logo_img><station_info>Radio Efimera</station_info><song>Honey In Heat</song><artist>Laika</artist>#
 ````
-For my solution to work, I need the artist and song from the file, which fortunately was the case with my station for Sunday. For your favorite station you have to find out by yourself.
-But how do I get artist and song now if I don't have grep and sed? 
+For my solution to work, the artist and song must be in the file, which fortunately was the case with my station for Sunday. For your favorite station you have to find out by yourself.
+But how can I process artist and song if I don't have grep or sed?
+And - moreover, who now tells me the corresponding playing time to artist and song?
+Fortunately for me, there are [services](https://en.wikipedia.org/wiki/List_of_online_music_databases) on the Internet that catalog music recordings and also make that publicly available via an API. I chose [MusicBrainz](https://musicbrainz.org/search?query=Winter+Wonderland+Aretha+Franklin&type=recording&method=indexed) in the end, not because it's possibly the best service, but because I understood how to use it the most. The API call for use with netcat fits into a [small file](https://github.com/ThomasHeinrichSchmidt/RadioScripting/blob/main/bin/MusicBrainz.xml), with artist and song specified on the first line.
 
 ````
-# /tmp/getq /tmp/playinfo.xml > /tmp/GET.xm
+GET  /ws/2/recording?query=Winter+Wonderland%20AND%20artist:Aretha+Franklin&type:song&limit=1  HTTP/1.1
+````
+All I needed now was a [tool](https://github.com/ThomasHeinrichSchmidt/RadioScripting/blob/main/src/getq.c) that would turn artist and song from playinfo.xml into a GET for MusicBrainz. In principle not very difficult, but how do I get this to work on the radio? Luckily [Rich Felker](https://github.com/richfelker/musl-cross-make) came to my rescue, who has already prepared everything:
+
+````
+$  git clone git://github.com/richfelker/musl-cross-make.git
+        -- in config.mak set ==> TARGET = arm-linux-musleabi
+$  make           -- runs for two hours
+$  make install
+$  ~Dev/musl/musl-cross/musl-cross-make/output/bin/arm-linux-musleabi-gcc -Wall -g -static getq.c -o getq
+````
+Together with a fixed [template](https://github.com/ThomasHeinrichSchmidt/RadioScripting/blob/main/bin/mbRequest.txt), we can now send the request to MusicBrainz.
+
+````
+# /tmp/getq /tmp/playinfo.xml > /tmp/GET.xml
 # cat /tmp/GET.xml /tmp/mbRequest.txt > /tmp/Request.txt
 # cat /tmp/Request.txt | /tmp/netcat -vv -w 5  musicbrainz.org 80  
 ````
+And that finally gives us the longed for playing time.
+````
+Warning: Inverse name lookup failed for `138.201.227.205'
+musicbrainz.org [138.201.227.205] 80 open
+HTTP/1.1 200 OK
+Date: Wed, 09 Jun 2021 09:48:56 GMT
+Content-Type: application/xml; charset=UTF-8
+Content-Length: 2564
+Connection: close
+Vary: Accept-Encoding
+X-RateLimit-Limit: 1200
+X-RateLimit-Remaining: 1187
+X-RateLimit-Reset: 1623232138
+Last-Modified: Wed, 09 Jun 2021 08:39:08 GMT
+ETag: "MmJkMmRlMDAwMDAwMDAwMFNvbHI="
+X-Cache-Status: MISS
+Access-Control-Allow-Origin: *
+
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?><metadata created="2021-06-09T09:48:56.313Z" xmlns="http://musicbrainz.org/ns/mmd-2.0#" xmlns:ns2="http://musicbrainz.org/ns/ext#-2.0"><recording-list count="10" offset="0"><recording id="c66fe1bf-939c-494a-be9f-9cef55e25696" ns2:score="100"><title>Winter Wonderland</title><length>134066</length><artist-credit><name-credit><name>Aretha Franklin</name><artist id="2f9ecbed-27be-40e6-abca-6de49d50299e"><name>Aretha Franklin</name><sort-name>Franklin, Aretha</sort-name><alias-list><alias sort-name="Franklin, Aretha">Franklin, Aretha</alias><alias sort-name="Aretha Fanklin">Aretha Fanklin</alias><alias sort-name="Franklin, Aretha Louise" type="Legal name" type-id="d4dcd0c0-b341-3612-a332-c0ce797b25cf">Aretha Louise Franklin</alias><alias sort-name="Arthaa Franklin">Arthaa Franklin</alias><alias sort-name="Aretha Franklyn">Aretha Franklyn</alias><alias sort-name="Aretja Franklin">Aretja Franklin</alias></alias-list></artist></name-credit></artist-credit><first-release-date>2002</first-release-date><release-list><release id="5bc1c73e-7155-4b45-9bd6-f5fbfc11901f"><title>Making Spirits Bright</title><status id="518ffc83-5cde-34df-8627-81bff5093d92">Promotion</status><artist-credit><name-credit><name>Various Artists</name><artist id="89ad4ac3-39f7-470e-963a-56509c546377"><name>Various Artists</name><sort-name>Various Artists</sort-name><disambiguation>add compilations to this artist</disambiguation></artist></name-credit></artist-credit><release-group id="cb0c5e60-5c3c-4756-ac8c-80cb76ed2b0d" type="Compilation" type-id="dd2a21e1-0c00-3729-a7a0-de60b84eb5d1"><title>Making Spirits Bright</title><primary-type id="f529b476-6e62-324f-b0aa-1f3e33d313fc">Album</primary-type><secondary-type-list><secondary-type id="dd2a21e1-0c00-3729-a7a0-de60b84eb5d1">Compilation</secondary-type></secondary-type-list></release-group><date>2002</date><country>CA</country><release-event-list><release-event><date>2002</date><area id="71bbafaa-e825-3e15-8ca9-017dcad1748b"><name>Canada</name><sort-name>Canada</sort-name><iso-3166-1-code-list><iso-3166-1-code>CA</iso-3166-1-code></iso-3166-1-code-list></area></release-event></release-event-list><medium-list count="1"><track-count>10</track-count><medium><position>1</position><format>CD</format><track-list count="10" offset="7"><track id="57748cb4-48fa-4716-9789-f1da97391eb1"><number>8</number><title>Winter Wonderland</title><length>134066</length></track></track-list></medium></medium-list></release></release-list></recording></recording-list></metadata>Total received bytes: 2953
+Total sent bytes: 398
+````
+OK, this is a bit confusing, but with a homemade little grep you can easily get the playing time in seconds from it, hidden in ``<length>134066</length>``.
 
 
 
-getpl.sh
+
 
 
 ## Limitations
