@@ -270,7 +270,40 @@ Then it's time to do something about it yourself and modify the whole thing acco
 
 
 ## Limitations
-* On my radio I can't get the list of presets (``ListPresets``), that would be nice to change the station automatically for example if the music on the current station gets too bad.
+* On my radio I can't get the list of presets (``ListPresets``) via UPnP, that would be nice to change the station automatically for example if the music on the current station gets too bad.
+
+## Some devices with (possibly) matching software
+- [ ] ABEO AB-H2003 Internet Radio
+- [ ] Albrecht DR 460 C Internet Radio
+- [ ] Albrecht DR 461 Internet Radio
+- [ ] Albrecht DR 463 Internet Radio
+- [ ] Asus AIR u3445
+- [x] auna Areal Bar Connect Soundbar
+- [x] auna KC3-Connect 100 WL-v2
+- [x] auna Radio Quarz 150
+- [x] auna Silver Star
+- [ ] DUAL IR 11 WLAN Internet Radio
+- [x] Hama Wireless LAN Internet-Tuner IR210
+- [ ] HDigit Orbiter
+- [ ] Hipshing IR608n
+- [ ] Imperial 22-235-00 Dabman i200 Internet / DAB+ Radio
+- [ ] Imperial 22-241-00 Dabman i400 Internet / DAB+ Radio
+- [ ] Imperial i110 black
+- [ ] Majority Homerton
+- [ ] Majority Pembroke Internet Radio
+- [ ] Majority Robinson Internet Radio
+- [ ] Majority Wolfson Internet Radio
+- [x] Netmus NS120
+- [x] NOXON iRadio Internet Radio
+- [ ] Oakcastle Internet Radio
+- [ ] oneConcept Streamo stereo system with internet radio
+- [ ] oneConcept TuneUp Internet Radio
+- [ ] Peterhouse Colours oak
+- [ ] Reflexion Design Internet Radio HRA19INT
+- [ ] Sencor SIR 6000WDB WiFi Internet Radio
+- [ ] TechniSat Star Radio IR 1
+- [ ] Xoro HMT 500 - Micro System Internet / DAB+ / FM Radio
+- [ ] Xoro »DAB 150 IR« Digitalradio (DAB)
 
 ## Acknowledgments
 * use [MusicBrainz Search API](https://musicbrainz.org/doc/MusicBrainz_API) to determine the length of a song

@@ -5,7 +5,7 @@
 # Use this to listen to talk shows without the bad music.
 #
 # INSTALL
-# ftpget 192.168.178.49 -P 2121 /tmp/Monitor.sh MuteMusic.sh
+# ftpget 192.168.178.49 -P 2121 /tmp/MuteMusic.sh MuteMusic.sh
 # chmod +x /tmp/MuteMusic.sh
 # /tmp/MuteMusic.sh
 
